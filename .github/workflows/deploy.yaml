@@ -1,0 +1,54 @@
+name: Deploy CloudFormation Stack
+
+on:
+  # push:
+  #   branches:
+  #     - main  # Ou a branch que você desejar
+  pull_request:
+    branches:
+      - main # Ou a branch que você desejar
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Passo 1: Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Passo 2: Configurar credenciais da AWS
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # aws-region: us-east-1 # Substitua pela sua região
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-oidc-role
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Passo 3: Verificar as credenciais em uso
+      - name: Verify AWS Credentials in use
+        run: |
+          echo "Verificando identidade do usuário AWS..."
+          aws sts get-caller-identity
+
+      # # Passo 3: Rodar script para verificar e criar/atualizar stack
+      # - name: Deploy VPC Stack
+      #   run: |
+      #     STACK_NAME="caf-sftp-vpc"
+      #     TEMPLATE_FILE="./deployment/01-sftp-vpc.template.yaml"  # O caminho para o seu template
+      #     PROFILE="dev-internal"  # O perfil, se você usar múltiplos perfis
+
+      #     # Verificar se a stack existe
+      #     stack_exists=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackName" --output text 2>/dev/null)
+
+      #     if [ "$stack_exists" == "$STACK_NAME" ]; then
+      #       # Se a stack existe, atualiza
+      #       echo "Stack $STACK_NAME existe. Atualizando..."
+      #       aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --profile $PROFILE --tags Key=Projeto,Value=MeuProjeto Key=Ambiente,Value=Desenvolvimento
+      #     else
+      #       # Se a stack não existe, cria
+      #       echo "Stack $STACK_NAME não existe. Criando..."
+      #       aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --profile $PROFILE --tags Key=Projeto,Value=MeuProjeto Key=Ambiente,Value=Desenvolvimento
+      #     fi

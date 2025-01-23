@@ -9,7 +9,7 @@ AWS_REGION=$(aws configure get region --profile $AWS_PROFILE)
 # Replace with your R53 Alias pointing to your ALB
 COMPANY_DOMAIN='<enter_your_domain>'        # example mycompanydomain.com
 CLOUDFRONT_CNAME='<enter_cloudfront_cname>' # example ui.mycompanydomain.com
-ECR_REPO_NAME='<enter_ecr_repo_name>' # example sftp-backend-0a635743
+ECR_REPO_NAME='<enter_ecr_repo_name>' # example caf-sftp-backend-0a635743
 
 # Build the image from the source directory
 pushd ../source/backend
@@ -17,7 +17,7 @@ pushd ../source/backend
 sed -i -e "s/REPLACE_ME_COMPANY_DOMAIN/$COMPANY_DOMAIN/" src/flask_app_jwt_configuration.json
 sed -i -e "s/REPLACE_ME_CLOUDFRONT_CNAME/$CLOUDFRONT_CNAME/" src/flask_app_jwt_configuration.json
 
-sudo docker build -t sftp-backend .
+sudo docker build -t caf-sftp-backend .
 
 popd
 
@@ -29,6 +29,6 @@ aws ecr get-login-password \
   --profile $AWS_PROFILE | sudo docker login --username AWS \
   --password-stdin "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-sudo docker tag sftp-backend "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest"
+sudo docker tag caf-sftp-backend "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest"
 
 sudo docker push "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest"
