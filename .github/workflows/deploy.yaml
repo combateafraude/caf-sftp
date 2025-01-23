@@ -4,9 +4,10 @@ on:
   # push:
   #   branches:
   #     - main  # Ou a branch que você desejar
-  pull_request:
-    branches:
-      - main # Ou a branch que você desejar
+  # pull_request:
+  #   branches:
+  #     - main # Ou a branch que você desejar
+  workflow_dispatch:
 
 jobs:
   deploy:
