@@ -1,0 +1,8 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Resources:
+
+Outputs:
+  FakeOutput:
+    Description: "A fake output"
+    Value: "This is a fake deploy"

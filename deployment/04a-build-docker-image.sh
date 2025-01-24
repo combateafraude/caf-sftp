@@ -7,9 +7,9 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text --profi
 AWS_REGION=$(aws configure get region --profile $AWS_PROFILE)
 
 # Replace with your R53 Alias pointing to your ALB
-COMPANY_DOMAIN='<enter_your_domain>'        # example mycompanydomain.com
-CLOUDFRONT_CNAME='<enter_cloudfront_cname>' # example ui.mycompanydomain.com
-ECR_REPO_NAME='<enter_ecr_repo_name>' # example caf-sftp-backend-0a635743
+COMPANY_DOMAIN='combateafraude.com'        # example mycompanydomain.com
+CLOUDFRONT_CNAME='sftp.combateafraude.com' # example ui.mycompanydomain.com
+ECR_REPO_NAME='<enter_ecr_repo_name>'       # example caf-sftp-backend-0a635743
 
 # Build the image from the source directory
 pushd ../source/backend

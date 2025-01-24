@@ -6,13 +6,13 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text --profi
 # INSTRUCTIONS - update with target region
 AWS_REGION=$(aws configure get region --profile $AWS_PROFILE)
 
-COGNITO_CLIENT_ID=''            # Get from sftp-cognito-stack outputs UserPoolClientId
+COGNITO_CLIENT_ID=''            # Get from caf-sftp-cognito outputs UserPoolClientId
 COGNITO_APP_CLIENT_SECRET=''    # Get from Cognito console for the above client id. 
 COGNITO_USER_USERNAME=''        # example mysftpuser
 COGNITO_USER_PASSWD=''          # Use upper and lower case characters along with a number and special character, e.g. TempPa$4Me!
 COGNITO_USER_TELNUM=''          # example +15555551212
 COGNITO_USER_EMAIL_DOMAIN=''    # example acmecorp.com
-COGNITO_USERPOOL_ID=''          # Get from sftp-cognito-stack outputs UserPoolId
+COGNITO_USERPOOL_ID=''          # Get from caf-sftp-cognito outputs UserPoolId
 
 # Create a user
 resp=$(aws cognito-idp admin-create-user \

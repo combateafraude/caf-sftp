@@ -10,7 +10,7 @@ Parameters:
     MinLength: 1
     MaxLength: 255
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
-    Default: sftp-vpc-stack
+    Default: caf-sftp-vpc
 
   HostedZoneId:
     Type: String

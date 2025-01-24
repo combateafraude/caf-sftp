@@ -1,12 +1,6 @@
 name: Deploy CloudFormation Stack
 
 on:
-  # push:
-  #   branches:
-  #     - main  # Ou a branch que você desejar
-  # pull_request:
-  #   branches:
-  #     - main # Ou a branch que você desejar
   workflow_dispatch:
 
 jobs:
@@ -17,12 +11,14 @@ jobs:
       id-token: write
       contents: read
 
-    steps:
-      # Passo 1: Checkout do código
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    env:
+      DOMAIN_URL: "sftp.combateafraude.com"
+      ROUTE_53_HOSTEDZONEID: ""
 
-      # Passo 2: Configurar credenciais da AWS
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,28 +29,175 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ vars.AWS_REGION }}
 
-      # Passo 3: Verificar as credenciais em uso
       - name: Verify AWS Credentials in use
         run: |
           echo "Verificando identidade do usuário AWS..."
           aws sts get-caller-identity
 
-      # # Passo 3: Rodar script para verificar e criar/atualizar stack
       # - name: Deploy VPC Stack
+      #   id: vpc
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-vpc
+      #     template-file: ./deployment/01-sftp-vpc.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: DefaultSecurityGroup Test
       #   run: |
-      #     STACK_NAME="caf-sftp-vpc"
-      #     TEMPLATE_FILE="./deployment/01-sftp-vpc.template.yaml"  # O caminho para o seu template
-      #     PROFILE="dev-internal"  # O perfil, se você usar múltiplos perfis
+      #     echo "${{ steps.vpc.outputs.DefaultSecurityGroup }}"
 
-      #     # Verificar se a stack existe
-      #     stack_exists=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackName" --output text 2>/dev/null)
+      - name: Deploy VPC Stack
+        id: test
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          stack-name: caf-sftp-vpc
+          template-file: ./deployment/test.template.yaml
+          capabilities: CAPABILITY_IAM
+          no-fail-on-empty-changeset: true
+          tags: |
+            PROJECT=caf-sftp 
+            ENVIRONMENT=development
 
-      #     if [ "$stack_exists" == "$STACK_NAME" ]; then
-      #       # Se a stack existe, atualiza
-      #       echo "Stack $STACK_NAME existe. Atualizando..."
-      #       aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --profile $PROFILE --tags Key=Projeto,Value=MeuProjeto Key=Ambiente,Value=Desenvolvimento
-      #     else
-      #       # Se a stack não existe, cria
-      #       echo "Stack $STACK_NAME não existe. Criando..."
-      #       aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --profile $PROFILE --tags Key=Projeto,Value=MeuProjeto Key=Ambiente,Value=Desenvolvimento
-      #     fi
+      - name: FakeOutput Test
+        run: |
+          echo "${{ steps.test.outputs.FakeOutput }}"
+          echo "$DOMAIN_URL"
+
+      # - name: Deploy COGNITO Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-cognito
+      #     template-file: ./deployment/02-sftp-cognito.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # TODO: AWSTransferForSFTPS3Bucket
+      # - name: Deploy ENDPOINT Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-endpoint
+      #     template-file: ./deployment/03-sftp-endpoint.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     parameter-overrides: >-
+      #       AWSTransferForSFTPS3Bucket=,
+      #       AWSTransferVPCSecGroup=${{ steps.vpc.outputs.DefaultSecurityGroup }},
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: Deploy ECS Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-ecs
+      #     template-file: ./deployment/04-sftp-ecs.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     parameter-overrides: >-
+      #       HostedZoneId=$ROUTE_53_HOSTEDZONEID,
+      #       RecordName=$DOMAIN_URL,
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: Build Docker Image and Set Variables
+      #   run: |
+      #     chmod +x ./deployment/04a-build-docker-image.sh
+      #     ./deployment/04a-build-docker-image.sh
+
+      # - name: Deploy FARGATE Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-ecs
+      #     template-file: ./deployment/05-sftp-fargate.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: Deploy FARGATE Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-ecs
+      #     template-file: ./deployment/05-sftp-fargate.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: Deploy SECURITY HEADERS LAMBDA Stack
+      #   id: securityheaders
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-security-headers-lambda-edge
+      #     template-file: ./deployment/06b-security-headers-lambda-edge.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     parameter-overrides: >-
+      #       DomainName=$DOMAIN_URL,
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+      # - name: Deploy WEB CLIENT Stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+      #   with:
+      #     stack-name: caf-sftp-web-client
+      #     template-file: ./deployment/07-sftp-web-client.template.yaml
+      #     capabilities: CAPABILITY_IAM
+      #     no-fail-on-empty-changeset: true
+      #     parameter-overrides: >-
+      #       LambdaEdgeVersionARN=${{ steps.securityheaders.outputs.VersionedSecurityHeadersLambda }},
+      #     tags: |
+      #       PROJECT=caf-sftp
+      #       ENVIRONMENT=development
+
+# # Setup env vars
+# AWS_PROFILE=$1
+
+# # Replace with your preferred domain name
+# DOMAIN_NAME='REPLACE_ME_COMPANY_DOMAIN' # NOTE: example, 'mycompanydomain.com'
+
+# # Create Cloudformation stack that creates Lambda@Edge function in US-East-1
+# stack_name="caf-sftp-sec-hdr-stack-$(echo $RANDOM)"
+# echo $stack_name
+
+# # This template needs to be deployed in US-EAST-1 as Lambda@Edge functions are currently
+# # required to be in US-EAST-1 region
+# aws cloudformation create-stack --stack-name $stack_name --template-body file://06b-security-headers-lambda-edge.template --parameters ParameterKey=DomainName,ParameterValue=$DOMAIN_NAME \
+#  --profile $AWS_PROFILE --region us-east-1 --capabilities CAPABILITY_IAM
+
+# # Print the value of Lambda@Edge version, which will be need in Cloudfront distribution configuration next.
+# lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
+# while [ -z "$lambda_edge_version" ] ; do # check for null
+#   lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
+#   echo "Waiting for stack to complete its creation."
+#   sleep 10
+# done
+# echo $lambda_edge_version
+
+# run: |
+#   STACK_NAME="caf-sftp-vpc"
+#   TEMPLATE_FILE="./deployment/01-sftp-vpc.template.yaml"
+
+#   # Verificar se a stack existe
+#   stack_exists=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackName" --output text 2>/dev/null)
+
+#   if [ "$stack_exists" == "$STACK_NAME" ]; then
+#     # Se a stack existe, atualiza
+#     echo "Stack $STACK_NAME existe. Atualizando..."
+#     aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
+#   else
+#     # Se a stack não existe, cria
+#     echo "Stack $STACK_NAME não existe. Criando..."
+#     aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
+#   fi

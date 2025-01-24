@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: (SO0103-operation-metrics) %%SOLUTION_NAME%% - This template deploys resources to collect operational metrics for %%SOLUTION_NAME%%.
 
 Parameters:
@@ -7,17 +7,19 @@ Parameters:
     MinLength: 1
     MaxLength: 255
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
-    Default: sftp-vpc-stack
+    Default: caf-sftp-vpc
 
   CognitoStackName:
     Type: String
-    Description: The name of the parent Cognito stack that you created. Necessary
+    Description:
+      The name of the parent Cognito stack that you created. Necessary
       to locate and reference resources created by that stack.
-    Default: sftp-cognito-stack
+    Default: caf-sftp-cognito
 
   ECSStackName:
     Type: String
-    Description: The name of the parent ECS Fargate networking stack that you created. Necessary
+    Description:
+      The name of the parent ECS Fargate networking stack that you created. Necessary
       to locate and reference resources created by that stack.
     Default: sftp-ecs-stack
 
@@ -62,7 +64,7 @@ Resources:
             reason: "resource created after IAM role creation."
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -74,7 +76,7 @@ Resources:
       Policies:
         - PolicyName: root
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -84,13 +86,13 @@ Resources:
                   - ecs:DescribeClusters
                   - cognito-idp:DescribeUserPool
                 Resource:
-                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*'
-                  - !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/*'
-                  - !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/*"
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
               - Effect: Allow
                 Action:
                   - cloudwatch:GetMetricStatistics
-                Resource: '*'
+                Resource: "*"
 
   CollectOperationalMetricsLambdaFunction:
     Type: AWS::Lambda::Function
@@ -119,27 +121,28 @@ Resources:
           url: !FindInMap ["Send", "Path", "url"]
           metrics: !Ref SendAnonymousUsage
           STACK_ID:
-            Fn::ImportValue: !Join [':', [!Ref 'VPCResourceStack', 'StackID']]
+            Fn::ImportValue: !Join [":", [!Ref "VPCResourceStack", "StackID"]]
           ECSClusterName:
-            Fn::ImportValue: !Join [':', [!Ref 'ECSStackName', 'ClusterName']]
+            Fn::ImportValue: !Join [":", [!Ref "ECSStackName", "ClusterName"]]
           CognitoUserPoolId:
-            Fn::ImportValue: !Join [':', [!Ref 'CognitoStackName', 'UserPoolId']]
+            Fn::ImportValue:
+              !Join [":", [!Ref "CognitoStackName", "UserPoolId"]]
           botoConfig: '{"user_agent_extra": "AwsSolution/SO0103/%%VERSION%%"}'
       Code:
         S3Bucket:
           !Join [
             "-",
             [
-            !FindInMap ["SourceCode", "General", "S3Bucket"],
-            Ref: "AWS::Region",
+              !FindInMap ["SourceCode", "General", "S3Bucket"],
+              Ref: "AWS::Region",
             ],
           ]
         S3Key:
           !Join [
             "/lambda/",
             [
-            !FindInMap ["SourceCode", "General", "KeyPrefix"],
-            "SendOperationalMetricsLambdaFunction.zip",
+              !FindInMap ["SourceCode", "General", "KeyPrefix"],
+              "SendOperationalMetricsLambdaFunction.zip",
             ],
           ]
 
@@ -152,7 +155,7 @@ Resources:
         Fn::Join:
           - "-"
           - - "CollectOperationalMetricsCWRule"
-            - Fn::ImportValue: !Join [':', [!Ref 'VPCResourceStack', 'StackID']]
+            - Fn::ImportValue: !Join [":", [!Ref "VPCResourceStack", "StackID"]]
       ScheduleExpression: "rate(12 hours)"
       State: "ENABLED"
       Targets:
