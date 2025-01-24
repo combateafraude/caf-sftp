@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Resources:
   FakeResource:
-    Type: "AWS::NoOp::Resource"
+    Type: AWS::CloudFormation::WaitConditionHandle
 
 Outputs:
   FakeOutput:
