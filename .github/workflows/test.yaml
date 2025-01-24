@@ -38,7 +38,7 @@ jobs:
           name: caf-sftp-vpc
           template: ./deployment/test.template.yaml
           capabilities: CAPABILITY_IAM
-          no-fail-on-empty-changeset: true
+          no-fail-on-empty-changeset: "1"
           tags: |
             Project=caf-sftp 
             Environment=development
