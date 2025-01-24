@@ -43,8 +43,8 @@ jobs:
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: DefaultSecurityGroup Test
       #   run: |
@@ -59,8 +59,8 @@ jobs:
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: true
           tags: |
-            PROJECT=caf-sftp 
-            ENVIRONMENT=development
+            Project=caf-sftp 
+            Environment=development
 
       - name: FakeOutput Test
         run: |
@@ -75,8 +75,8 @@ jobs:
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # TODO: AWSTransferForSFTPS3Bucket
       # - name: Deploy ENDPOINT Stack
@@ -90,8 +90,8 @@ jobs:
       #       AWSTransferForSFTPS3Bucket=,
       #       AWSTransferVPCSecGroup=${{ steps.vpc.outputs.DefaultSecurityGroup }},
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: Deploy ECS Stack
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -104,8 +104,8 @@ jobs:
       #       HostedZoneId=$ROUTE_53_HOSTEDZONEID,
       #       RecordName=$DOMAIN_URL,
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: Build Docker Image and Set Variables
       #   run: |
@@ -120,8 +120,8 @@ jobs:
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: Deploy FARGATE Stack
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -131,8 +131,8 @@ jobs:
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: Deploy SECURITY HEADERS LAMBDA Stack
       #   id: securityheaders
@@ -145,8 +145,8 @@ jobs:
       #     parameter-overrides: >-
       #       DomainName=$DOMAIN_URL,
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
       # - name: Deploy WEB CLIENT Stack
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -158,8 +158,8 @@ jobs:
       #     parameter-overrides: >-
       #       LambdaEdgeVersionARN=${{ steps.securityheaders.outputs.VersionedSecurityHeadersLambda }},
       #     tags: |
-      #       PROJECT=caf-sftp
-      #       ENVIRONMENT=development
+      #       Project=caf-sftp
+      #       Environment=development
 
 # # Setup env vars
 # AWS_PROFILE=$1
