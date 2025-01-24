@@ -34,7 +34,7 @@ Parameters:
     MinLength: 1
     MaxLength: 255
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
-    Default: sftp-fargate-stack
+    Default: caf-sftp-fargate
 
 Resources:
   CloudfrontDistributionAliasRecordSet:

@@ -48,3 +48,4 @@ jobs:
           echo "${{ steps.test.outputs.FakeOutput }}"
           echo "${{ steps.awscredentials.outputs.aws-account-id }}"
           echo "$DOMAIN_URL"
+          aws s3 ls

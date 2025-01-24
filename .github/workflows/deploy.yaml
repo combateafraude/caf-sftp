@@ -12,7 +12,7 @@ jobs:
       contents: read
 
     env:
-      DOMAIN_URL: "sftp.combateafraude.com"
+      DOMAIN_URL: "combateafraude.com"
       ROUTE_53_HOSTEDZONEID: ""
 
     steps:
@@ -78,42 +78,54 @@ jobs:
             Environment=development
 
       - name: Deploy ECS Stack
+        id: ecs
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: caf-sftp-ecs
+          name: caf-sftp-backend
           template: ./deployment/04-sftp-ecs.template.yaml
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
             HostedZoneId=$ROUTE_53_HOSTEDZONEID,
-            RecordName=$DOMAIN_URL,
+            RecordName=sftp-backend.$DOMAIN_URL,
           tags: |
             Project=caf-sftp
             Environment=development
 
-      - name: Build Docker Image and Set Variables
+      # chmod +x ./deployment/04a-build-docker-image.sh
+      # ./deployment/04a-build-docker-image.sh ${{ steps.awscredentials.outputs.aws-account-id }}
+      - name: Set Backend Variables
         run: |
-          chmod +x ./deployment/04a-build-docker-image.sh
-          ./deployment/04a-build-docker-image.sh ${{ steps.awscredentials.outputs.aws-account-id }}
+          sed -i -e "s/REPLACE_ME_COMPANY_DOMAIN/$DOMAIN_URL/" ./source/backend/src/flask_app_jwt_configuration.json
+          sed -i -e "s/REPLACE_ME_CLOUDFRONT_CNAME/sftp-backend.$DOMAIN_URL/" ./source/backend/src/flask_app_jwt_configuration.json
 
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ steps.ecs.outputs.ECR }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG ./source/backend/Dockerfile
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:latest
+          echo "IMAGE_URI=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_ENV
+
+        # TODO
+        # ACMCertificateARN
       - name: Deploy FARGATE Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: caf-sftp-ecs
+          name: caf-sftp-fargate
           template: ./deployment/05-sftp-fargate.template.yaml
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
-          tags: |
-            Project=caf-sftp
-            Environment=development
-
-      - name: Deploy FARGATE Stack
-        uses: aws-actions/aws-cloudformation-github-deploy@v1
-        with:
-          name: caf-sftp-ecs
-          template: ./deployment/05-sftp-fargate.template.yaml
-          capabilities: CAPABILITY_IAM
-          no-fail-on-empty-changeset: "1"
+          parameter-overrides: >-
+            ACMCertificateARN=,
+            ImageURI=$IMAGE_URI
           tags: |
             Project=caf-sftp
             Environment=development
@@ -127,11 +139,12 @@ jobs:
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
-            DomainName=$DOMAIN_URL,
+            DomainName=sftp.$DOMAIN_URL,
           tags: |
             Project=caf-sftp
             Environment=development
 
+      # TODO: ACMCertificateARN
       - name: Deploy WEB CLIENT Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
@@ -141,47 +154,79 @@ jobs:
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
             LambdaEdgeVersionARN=${{ steps.securityheaders.outputs.VersionedSecurityHeadersLambda }},
+            HostedZoneId=$ROUTE_53_HOSTEDZONEID,
+            ACMCertificateARN=,
+            CNameAlternateDomainName=sftp.$DOMAIN_URL,
           tags: |
             Project=caf-sftp
             Environment=development
 
-# # Setup env vars
-# AWS_PROFILE=$1
+      - name: Build and deploy frontend
+        run: |
+          BACKEND_URL=https://stfp-backend.$DOMAIN_URL"
+          SFTP_WEB_CLIENT_BUCKET=caf-sftp-web-client"
 
-# # Replace with your preferred domain name
-# DOMAIN_NAME='REPLACE_ME_COMPANY_DOMAIN' # NOTE: example, 'mycompanydomain.com'
+          pushd ./source/frontend
 
-# # Create Cloudformation stack that creates Lambda@Edge function in US-East-1
-# stack_name="caf-sftp-sec-hdr-stack-$(echo $RANDOM)"
-# echo $stack_name
+          # Remover o conteúdo anterior do bucket S3
+          aws s3 rm s3://$SFTP_WEB_CLIENT_BUCKET --recursive
 
-# # This template needs to be deployed in US-EAST-1 as Lambda@Edge functions are currently
-# # required to be in US-EAST-1 region
-# aws cloudformation create-stack --stack-name $stack_name --template-body file://06b-security-headers-lambda-edge.template --parameters ParameterKey=DomainName,ParameterValue=$DOMAIN_NAME \
-#  --profile $AWS_PROFILE --region us-east-1 --capabilities CAPABILITY_IAM
+          # Remover dist antiga
+          rm -rf ./dist
 
-# # Print the value of Lambda@Edge version, which will be need in Cloudfront distribution configuration next.
-# lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
-# while [ -z "$lambda_edge_version" ] ; do # check for null
-#   lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
-#   echo "Waiting for stack to complete its creation."
-#   sleep 10
-# done
-# echo $lambda_edge_version
+          # Substituir a URL do backend no código-fonte
+          sed -i -e "s/REPLACE_ME/$BACKEND_URL/" src/app/service/ftp.service.ts
 
-# run: |
-#   STACK_NAME="caf-sftp-vpc"
-#   TEMPLATE_FILE="./deployment/01-sftp-vpc.template.yaml"
+          # Instalar dependências e buildar a aplicação
+          npm install
+          ng build --prod
 
-#   # Verificar se a stack existe
-#   stack_exists=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackName" --output text 2>/dev/null)
+          # Sincronizar os arquivos gerados para o S3 com cabeçalhos de cache
+          aws s3 sync --cache-control 'max-age=604800' --exclude index.html dist/sftp-ng-webui s3://$SFTP_WEB_CLIENT_BUCKET
 
-#   if [ "$stack_exists" == "$STACK_NAME" ]; then
-#     # Se a stack existe, atualiza
-#     echo "Stack $STACK_NAME existe. Atualizando..."
-#     aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
-#   else
-#     # Se a stack não existe, cria
-#     echo "Stack $STACK_NAME não existe. Criando..."
-#     aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
-#   fi
+          # Sincronizar index.html com cabeçalhos de 'no-cache'
+          aws s3 sync --cache-control 'no-cache' dist/sftp-ng-webui s3://$SFTP_WEB_CLIENT_BUCKET/
+
+          # Voltar para o diretório original
+          popd
+
+      # # Setup env vars
+      # AWS_PROFILE=$1
+
+      # # Replace with your preferred domain name
+      # DOMAIN_NAME='REPLACE_ME_COMPANY_DOMAIN' # NOTE: example, 'mycompanydomain.com'
+
+      # # Create Cloudformation stack that creates Lambda@Edge function in US-East-1
+      # stack_name="caf-sftp-sec-hdr-stack-$(echo $RANDOM)"
+      # echo $stack_name
+
+      # # This template needs to be deployed in US-EAST-1 as Lambda@Edge functions are currently
+      # # required to be in US-EAST-1 region
+      # aws cloudformation create-stack --stack-name $stack_name --template-body file://06b-security-headers-lambda-edge.template --parameters ParameterKey=DomainName,ParameterValue=$DOMAIN_NAME \
+      #  --profile $AWS_PROFILE --region us-east-1 --capabilities CAPABILITY_IAM
+
+      # # Print the value of Lambda@Edge version, which will be need in Cloudfront distribution configuration next.
+      # lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
+      # while [ -z "$lambda_edge_version" ] ; do # check for null
+      #   lambda_edge_version=$(aws cloudformation describe-stacks --stack-name $stack_name --profile $AWS_PROFILE --region us-east-1 | grep OutputValue)
+      #   echo "Waiting for stack to complete its creation."
+      #   sleep 10
+      # done
+      # echo $lambda_edge_version
+
+      # run: |
+      #   STACK_NAME="caf-sftp-vpc"
+      #   TEMPLATE_FILE="./deployment/01-sftp-vpc.template.yaml"
+
+      #   # Verificar se a stack existe
+      #   stack_exists=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackName" --output text 2>/dev/null)
+
+      #   if [ "$stack_exists" == "$STACK_NAME" ]; then
+      #     # Se a stack existe, atualiza
+      #     echo "Stack $STACK_NAME existe. Atualizando..."
+      #     aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
+      #   else
+      #     # Se a stack não existe, cria
+      #     echo "Stack $STACK_NAME não existe. Criando..."
+      #     aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_FILE --tags Key=PROJECT,Value=caf-sftp Key=ENVIRONMENT,Value=development
+      #   fi

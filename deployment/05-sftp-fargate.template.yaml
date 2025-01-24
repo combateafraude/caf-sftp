@@ -10,13 +10,13 @@ Parameters:
     Description:
       The name of the parent ECS Fargate networking stack that you created. Necessary
       to locate and reference resources created by that stack.
-    Default: sftp-ecs-stack
+    Default: caf-sftp-backend
 
   SFTPEndPointStackName:
     Type: String
     Description: The name of the SFTP Endpoint stack that you created. Necessary
       to locate and reference resources created by that stack.
-    Default: sftp-endpoint-stack
+    Default: caf-sftp-endpoint
 
   VPCResourceStack:
     Type: String
