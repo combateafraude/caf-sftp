@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Resources:
+  FakeResource:
+    Type: "AWS::NoOp::Resource"
+
 Outputs:
   FakeOutput:
     Description: "A fake output"
