@@ -5,7 +5,7 @@ Parameters:
   ResourceTag:
     Description: An environment name that will be prefixed to resource names
     Type: String
-    Default: CAF-SFTP-VPC
+    Default: caf-sftp-vpc
 
   VpcCIDR:
     Description: VPC CIDR /21 = 2046 hosts; can have 8 /24 subnets (10.194.0.0/24 - 10.194.7.0/24)

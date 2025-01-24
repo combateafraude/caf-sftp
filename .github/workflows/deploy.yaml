@@ -39,7 +39,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-vpc
-      #     template-file: ./deployment/01-sftp-vpc.template.yaml
+      #     template: ./deployment/01-sftp-vpc.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
@@ -50,12 +50,12 @@ jobs:
       #   run: |
       #     echo "${{ steps.vpc.outputs.DefaultSecurityGroup }}"
 
-      - name: Deploy VPC Stack
+      - name: Deploy Test Stack
         id: test
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           stack-name: caf-sftp-vpc
-          template-file: ./deployment/test.template.yaml
+          template: ./deployment/test.template.yaml
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: true
           tags: |
@@ -71,7 +71,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-cognito
-      #     template-file: ./deployment/02-sftp-cognito.template.yaml
+      #     template: ./deployment/02-sftp-cognito.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
@@ -83,7 +83,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-endpoint
-      #     template-file: ./deployment/03-sftp-endpoint.template.yaml
+      #     template: ./deployment/03-sftp-endpoint.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     parameter-overrides: >-
@@ -97,7 +97,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-ecs
-      #     template-file: ./deployment/04-sftp-ecs.template.yaml
+      #     template: ./deployment/04-sftp-ecs.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     parameter-overrides: >-
@@ -116,7 +116,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-ecs
-      #     template-file: ./deployment/05-sftp-fargate.template.yaml
+      #     template: ./deployment/05-sftp-fargate.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
@@ -127,7 +127,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-ecs
-      #     template-file: ./deployment/05-sftp-fargate.template.yaml
+      #     template: ./deployment/05-sftp-fargate.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     tags: |
@@ -139,7 +139,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-security-headers-lambda-edge
-      #     template-file: ./deployment/06b-security-headers-lambda-edge.template.yaml
+      #     template: ./deployment/06b-security-headers-lambda-edge.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     parameter-overrides: >-
@@ -152,7 +152,7 @@ jobs:
       #   uses: aws-actions/aws-cloudformation-github-deploy@v1
       #   with:
       #     stack-name: caf-sftp-web-client
-      #     template-file: ./deployment/07-sftp-web-client.template.yaml
+      #     template: ./deployment/07-sftp-web-client.template.yaml
       #     capabilities: CAPABILITY_IAM
       #     no-fail-on-empty-changeset: true
       #     parameter-overrides: >-
