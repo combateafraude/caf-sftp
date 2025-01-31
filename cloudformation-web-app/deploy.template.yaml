@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  # Identity Bearer Role
+  IdentityBearerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "transfer.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:SetContext"
+      RoleName: "web-app-user-session"
+
+  IdentityBearerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "AllowS3AccessGrants"
+      Roles:
+        - Ref: IdentityBearerRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:GetDataAccess"
+              - "s3:ListCallerAccessGrants"
+              - "s3:ListAccessGrantsInstances"
+            Resource: "*"
+
+  # Access Grants Role
+  AccessGrantsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "access-grants.s3.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:SetContext"
+      RoleName: "access-grants-location"
+
+  AccessGrantsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "AccessGrantsFullS3Policy"
+      Roles:
+        - Ref: AccessGrantsRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource: "*"
+
+Outputs:
+  IdentityBearerRoleArn:
+    Description: "ARN of the Identity Bearer Role"
+    Value: !GetAtt IdentityBearerRole.Arn
+
+  AccessGrantsRoleArn:
+    Description: "ARN of the Access Grants Role"
+    Value: !GetAtt AccessGrantsRole.Arn

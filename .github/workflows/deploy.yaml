@@ -13,7 +13,7 @@ jobs:
 
     env:
       DOMAIN_URL: "combateafraude.com"
-      ROUTE_53_HOSTEDZONEID: ""
+      # ROUTE_53_HOSTEDZONEID: ""
 
     steps:
       - name: Checkout repository
@@ -23,12 +23,11 @@ jobs:
         id: awscredentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # aws-region: us-east-1 # Substitua pela sua região
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-oidc-role
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ vars.AWS_REGION }}
+
+      # TODO: CRIAR UM BUCKET SEGUINDO EXEMPLO DE PRODUÇÃO
 
       - name: Verify AWS Credentials in use
         run: |
@@ -46,10 +45,6 @@ jobs:
           tags: |
             Project=caf-sftp
             Environment=development
-
-      - name: DefaultSecurityGroup Test
-        run: |
-          echo "${{ steps.vpc.outputs.DefaultSecurityGroup }}"
 
       - name: Deploy COGNITO Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -77,6 +72,7 @@ jobs:
             Project=caf-sftp
             Environment=development
 
+      # REMOVED: HostedZoneId
       - name: Deploy ECS Stack
         id: ecs
         uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -86,14 +82,11 @@ jobs:
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
-            HostedZoneId=$ROUTE_53_HOSTEDZONEID,
             RecordName=sftp-backend.$DOMAIN_URL,
           tags: |
             Project=caf-sftp
             Environment=development
 
-      # chmod +x ./deployment/04a-build-docker-image.sh
-      # ./deployment/04a-build-docker-image.sh ${{ steps.awscredentials.outputs.aws-account-id }}
       - name: Set Backend Variables
         run: |
           sed -i -e "s/REPLACE_ME_COMPANY_DOMAIN/$DOMAIN_URL/" ./source/backend/src/flask_app_jwt_configuration.json
@@ -114,8 +107,7 @@ jobs:
           docker push $REGISTRY/$REPOSITORY:latest
           echo "IMAGE_URI=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_ENV
 
-        # TODO
-        # ACMCertificateARN
+        # TODO: ACMCertificateARN
       - name: Deploy FARGATE Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
@@ -124,8 +116,7 @@ jobs:
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
-            ACMCertificateARN=,
-            ImageURI=$IMAGE_URI
+            ImageURI=${{ env.IMAGE_URI }}
           tags: |
             Project=caf-sftp
             Environment=development
@@ -145,6 +136,7 @@ jobs:
             Environment=development
 
       # TODO: ACMCertificateARN
+      # REMOVED: HostedZoneId
       - name: Deploy WEB CLIENT Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
@@ -154,16 +146,14 @@ jobs:
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
             LambdaEdgeVersionARN=${{ steps.securityheaders.outputs.VersionedSecurityHeadersLambda }},
-            HostedZoneId=$ROUTE_53_HOSTEDZONEID,
-            ACMCertificateARN=,
-            CNameAlternateDomainName=sftp.$DOMAIN_URL,
+            CNameAlternateDomainName=sftp.$DOMAIN_URL
           tags: |
             Project=caf-sftp
             Environment=development
 
       - name: Build and deploy frontend
         run: |
-          BACKEND_URL=https://stfp-backend.$DOMAIN_URL"
+          BACKEND_URL=https://sftp-backend.$DOMAIN_URL"
           SFTP_WEB_CLIENT_BUCKET=caf-sftp-web-client"
 
           pushd ./source/frontend
@@ -178,7 +168,7 @@ jobs:
           sed -i -e "s/REPLACE_ME/$BACKEND_URL/" src/app/service/ftp.service.ts
 
           # Instalar dependências e buildar a aplicação
-          npm install
+          npm ci
           ng build --prod
 
           # Sincronizar os arquivos gerados para o S3 com cabeçalhos de cache

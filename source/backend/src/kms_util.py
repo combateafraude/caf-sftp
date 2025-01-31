@@ -11,7 +11,8 @@ config = Config(
       'mode': 'standard'
    }
 )
-session = boto3.session.Session()
+session = boto3.session.Session(region_name='us-east-1')
+
 kms = session.client('kms', config=config)
 
 logging.config.fileConfig('logging.conf')

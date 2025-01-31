@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: (SO0103-fargate) %%SOLUTION_NAME%% -Deploys SFTP web client backend service on AWS Fargate, hosted in a private subnet, but accessible via a public load balancer.
 Parameters:
-  ACMCertificateARN:
-    Type: String
-    Description: ACM Certificate ARN that will be associated with the public-facing load-balancer
+  # ACMCertificateARN:
+  #   Type: String
+  #   Description: ACM Certificate ARN that will be associated with the public-facing load-balancer
 
   ECSStackName:
     Type: String
@@ -258,17 +258,19 @@ Resources:
   PublicLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      Certificates:
-        - CertificateArn: !Ref ACMCertificateARN
+      # Certificates:
+      #   - CertificateArn: !Ref ACMCertificateARN
       DefaultActions:
         - TargetGroupArn: !Ref "TargetGroup"
           Type: "forward"
       LoadBalancerArn:
         Fn::ImportValue:
           !Join [":", [!Ref "ECSStackName", "PublicLoadBalancer"]]
-      Port: 443
-      Protocol: HTTPS
-      SslPolicy: ELBSecurityPolicy-TLS-1-2-Ext-2018-06
+      Port: 80
+      Protocol: HTTP
+      # Port: 443
+      # Protocol: HTTPS
+      # SslPolicy: ELBSecurityPolicy-TLS-1-2-Ext-2018-06
 
   WebClientAccessLogs:
     Type: "AWS::S3::Bucket"

@@ -12,11 +12,11 @@ Parameters:
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
     Default: caf-sftp-vpc
 
-  HostedZoneId:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    Description: The Id of the hosted zone used to create an alias record for the ALB.
+  # HostedZoneId:
+  #   Type: String
+  #   MinLength: 1
+  #   MaxLength: 255
+  #   Description: The Id of the hosted zone used to create an alias record for the ALB.
 
   RecordName:
     Type: String
@@ -76,17 +76,17 @@ Resources:
         # - Fn::ImportValue: !Sub '${VPCResourceStack}:PublicSubnet3'
       SecurityGroups: [!Ref "PublicLoadBalancerSG"]
 
-  R53ALBAliasRecordSet:
-    Type: AWS::Route53::RecordSetGroup
-    Properties:
-      HostedZoneId: !Ref "HostedZoneId"
-      Comment: DNS name for the ALB.
-      RecordSets:
-        - Name: !Sub "${RecordName}."
-          Type: A
-          AliasTarget:
-            HostedZoneId: !GetAtt "PublicLoadBalancer.CanonicalHostedZoneID"
-            DNSName: !GetAtt "PublicLoadBalancer.DNSName"
+  # R53ALBAliasRecordSet:
+  #   Type: AWS::Route53::RecordSetGroup
+  #   Properties:
+  #     HostedZoneId: !Ref "HostedZoneId"
+  #     Comment: DNS name for the ALB.
+  #     RecordSets:
+  #       - Name: !Sub "${RecordName}."
+  #         Type: A
+  #         AliasTarget:
+  #           HostedZoneId: !GetAtt "PublicLoadBalancer.CanonicalHostedZoneID"
+  #           DNSName: !GetAtt "PublicLoadBalancer.DNSName"
   # ECS Resources
   ECSCluster:
     Type: AWS::ECS::Cluster

@@ -8,7 +8,7 @@ from flask import Flask
 from flask import jsonify, send_file, Response, after_this_request
 from flask_cors import CORS
 from flask_jwt_extended import (
-    JWTManager, jwt_required,get_jwt_identity, create_access_token, set_access_cookies, unset_jwt_cookies, get_raw_jwt
+    JWTManager, jwt_required,get_jwt_identity, create_access_token, set_access_cookies, unset_jwt_cookies, get_jwt
 )
 from auth_util import authenticate_request
 from kms_util import encrypt_username_password_boto
@@ -151,13 +151,18 @@ cw = boto3.client('cloudwatch')
 pid = os.getpid()
 
 # Get Fargate Task ARN
-fargate_task_metadata_path =  os.getenv('ECS_CONTAINER_METADATA_URI_V4')
-resp = requests.get(fargate_task_metadata_path + "/task").json()
-fargate_task_arn = resp.get('TaskARN')
-fargate_task_id = fargate_task_arn.split("/")[2]
-cluster_arn = resp.get('Cluster')
+#  
+# fargate_task_metadata_path = os.getenv('ECS_CONTAINER_METADATA_URI_V4') or "http://localhost:8080"
+# resp = requests.get(fargate_task_metadata_path + "/task").json()
+# fargate_task_arn = resp.get('TaskARN')
+# fargate_task_id = fargate_task_arn.split("/")[2]
+# cluster_arn = resp.get('Cluster')
 
-@app.route('/healthcheck', methods=['GET',])
+fargate_task_arn = "arn:aws:ecs:region:account_id:task/fargate_task_example"
+fargate_task_id = "fargate_task_example_id"
+cluster_arn = "arn:aws:ecs:region:account_id:cluster/cluster_example"
+
+@app.route('/healthcheck', methods=['GET',], endpoint='healthcheck_endpoint')
 def health_check():
     response = jsonify({'message': "Health check executed."})
     response.status_code = 200
@@ -190,8 +195,8 @@ def health_check():
         logger.error(f'TaskID: {fargate_task_id}(PID:{pid}) - health_check(): call to /health_check returned exception {e}')
         return bad_request("Bad or Invalid Request", 500)  # Internal Server Error
 
-@app.route('/api/isconnected', methods=['GET',])
-@jwt_required
+@app.route('/api/isconnected', methods=['GET',], endpoint='isconnected_endpoint')
+@jwt_required()
 def isconnected():
     response = jsonify({'message': "API is connected."})
     # logger.debug(f'isconnected(): response: {response}')
@@ -199,7 +204,7 @@ def isconnected():
 
     return response
 
-@app.route('/api/authenticate', methods=['POST', 'OPTIONS'])
+@app.route('/api/authenticate', methods=['POST', 'OPTIONS'], endpoint='authenticate_endpoint')
 @crossdomain(origin=app.config['front_end_CORS_origin'])
 def authenticate():
     try:
@@ -250,7 +255,7 @@ def refresh_expiring_jwts(response):
         # Only create access tokens for specific endpoints
         if any(item in request_str for item in allowed_endpoints):
             logger.debug(f'TaskID: {fargate_task_id}(PID:{pid}) - refresh_expiring_jwts(): {request_str}')
-            exp_timestamp = get_raw_jwt()["exp"]
+            exp_timestamp = get_jwt()["exp"]
             now = datetime.datetime.now(timezone.utc)
             target_timestamp = datetime.datetime.timestamp(now + timedelta(seconds=120))
             if target_timestamp > exp_timestamp:
@@ -266,8 +271,8 @@ def refresh_expiring_jwts(response):
         logger.debug(f'TaskID: {fargate_task_id}(PID:{pid}) - refresh_expiring_jwts(): In EXCEPT CLAUSE')
         return response
 
-@app.route('/api/logout', methods=['POST'])
-@jwt_required
+@app.route('/api/logout', methods=['POST'], endpoint='logout_endpoint')
+@jwt_required()
 def logout():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - logout(): Request received')
@@ -283,8 +288,8 @@ def logout():
         return bad_request("Bad or Invalid Request",500)
 
 
-@app.route('/api/listchildnodes', methods=['POST'])
-@jwt_required
+@app.route('/api/listchildnodes', methods=['POST'], endpoint='list_child_nodes_endpoint')
+@jwt_required()
 def list_child_nodes():
     try:
         
@@ -342,8 +347,8 @@ def list_child_nodes():
         logger.error(f'TaskID: {fargate_task_id}(PID:{pid}) - list_child_nodes(): call to /api/listchildnodes returned exception {e}')
         return bad_request("Bad or Invalid Request", 500)
 
-@app.route('/api/numberofchildnodes', methods=['POST'])
-@jwt_required
+@app.route('/api/numberofchildnodes', methods=['POST'], endpoint='number_of_child_nodes_endpoint')
+@jwt_required()
 def number_of_child_nodes():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - number_of_child_nodes(): Request received')
@@ -377,8 +382,8 @@ def number_of_child_nodes():
 
 
 # SFTP Upload operation
-@app.route('/api/upload', methods=['POST'])
-@jwt_required
+@app.route('/api/upload', methods=['POST'], endpoint='upload_endpoint')
+@jwt_required()
 def upload():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - upload(): Upload file request received')
@@ -453,8 +458,8 @@ def upload():
         logger.error(f'TaskID: {fargate_task_id}(PID:{pid}) - upload(): call to /api/upload returned exception {e}')
         return bad_request(e.description, 500)
 
-@app.route('/api/download', methods=['POST'])
-@jwt_required
+@app.route('/api/download', methods=['POST'], endpoint='download_endpoint')
+@jwt_required()
 def download():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - download(): Request received')
@@ -519,8 +524,8 @@ def download():
         logger.error(f'TaskID: {fargate_task_id}(PID:{pid}) - download(): call to /api/download returned exception {e}')
         return bad_request("Bad or Invalid Request", 500)
 
-@app.route('/api/delete', methods=['POST'])
-@jwt_required
+@app.route('/api/delete', methods=['POST'], endpoint='delete_endpoint')
+@jwt_required()
 def delete():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - delete(): Request received')
@@ -554,8 +559,8 @@ def delete():
         logger.error(f'TaskID: {fargate_task_id}(PID:{pid}) - delete(): call to /api/delete returned exception {e}')
         return bad_request("Bad or Invalid Request", 500)
 
-@app.route('/api/rename', methods=['POST'])
-@jwt_required
+@app.route('/api/rename', methods=['POST'], endpoint='rename_endpoint')
+@jwt_required()
 def rename():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - rename(): Request received')
@@ -604,8 +609,8 @@ def rename():
         return bad_request("Bad or Invalid Request", 500)
 
 
-@app.route('/api/createfolder', methods=['POST'])
-@jwt_required
+@app.route('/api/createfolder', methods=['POST'], endpoint='create_folder_endpoint')
+@jwt_required()
 def create_folder():
     try:
         logger.info(f'TaskID: {fargate_task_id}(PID:{pid}) - create_folder(): Request received')

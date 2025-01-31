@@ -1,6 +1,6 @@
 # https://pythonspeed.com/articles/multi-stage-docker-python/
 # Use an official Python runtime as a parent image
-FROM python:3.8.1 AS builder
+FROM python:3.10.12 AS builder
 
 # setting environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -13,7 +13,7 @@ RUN pip3 install --user -r requirements.txt
 EXPOSE 80
 
 # second unnamed stage
-FROM python:3.8-slim
+FROM python:3.10.12-slim
 COPY --from=builder /root/.local /root/.local
 # Make sure scripts in .local are usable:
 ENV PATH=/root/.local/bin:$PATH
