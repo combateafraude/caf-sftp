@@ -34,7 +34,7 @@ jobs:
         with:
           name: caf-sftp-vpc
           template: ./cloudformation-web-app/deploy.template.yaml
-          capabilities: CAPABILITY_IAM
+          capabilities: "CAPABILITY_IAM"
           no-fail-on-empty-changeset: "1"
           tags: |
             Project=caf-sftp
