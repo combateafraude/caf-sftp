@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  AmplifyTestRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: amplify-test
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: amplify.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudWatchLogsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:PutLogEvents
+                Resource: arn:aws:logs:us-east-1:*:log-group:/aws/amplify/*
+        - PolicyName: AmplifyPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - amplify:List*
+                Resource: "*"
+        - PolicyName: AppSyncPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - appsync:List*
+                  - appsync:Read*
+                  - appsync:Write*
+                Resource: "*"
+        - PolicyName: CloudFormationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:ListStacks
+                  - cloudformation:DescribeStacks
+                Resource: "*"
+        - PolicyName: STSWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: "*"
+        - PolicyName: SSMReadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:Describe*
+                  - ssm:Get*
+                Resource: "*"
